@@ -86,30 +86,41 @@ const QuickAction = ({ label, icon, onClick, sublabel }) => (
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { accessToken } = useAuth();
-  const [stats, setStats] = useState({
-    courses: 0,
-    students: 0,
-    trainers: 0,
-    assessments: 0
-  });
+  const [stats, setStats] = useState({ courses: 0, students: 'Syncing', trainers: 0, assessments: 'Syncing' });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // We could fetch actual counts here. 
-    // For now, let's just use some nice presentation data until we have a counts endpoint.
-    const fetchStats = async () => {
+    const fetchEverything = async () => {
+      if (!accessToken) return;
+      setLoading(true);
       try {
-        const res = await fetch(`${ADMIN_API}/get-active-courses`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setStats(s => ({ ...s, courses: data.courses?.length || 0 }));
+        const [courseRes, trainerRes] = await Promise.all([
+          fetch(`${ADMIN_API}/courses/ids-by-status`, { headers: { 'Authorization': `Bearer ${accessToken}` } }),
+          fetch(`${ADMIN_API}/all_trainer`, { headers: { 'Authorization': `Bearer ${accessToken}` } })
+        ]);
+        
+        let courseCount = 0;
+        let trainerCount = 0;
+        
+        if (courseRes.ok) {
+          const data = await courseRes.json();
+          const { active, draft, inactive } = data.courses || {};
+          courseCount = [...(active || []), ...(draft || []), ...(inactive || [])].length;
         }
+        
+        if (trainerRes.ok) {
+          const tData = await trainerRes.json();
+          trainerCount = (tData.active_trainer_email?.length || 0) + (tData.inactive_trainer_email?.length || 0);
+        }
+
+        setStats({ courses: courseCount, trainers: trainerCount, students: 'N/A', assessments: '...' });
       } catch (err) {
-        console.error("Failed to load metrics");
+        console.error("Dashboard sync error");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchStats();
+    fetchEverything();
   }, [accessToken]);
 
   return (
@@ -142,10 +153,10 @@ const AdminDashboard = () => {
 
       {/* METRICS GRID */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-        <StatCard title="Total Courses" value={stats.courses} icon={<BookOpen size={24} />} color="#10b981" trend="12" delay={0.1} />
-        <StatCard title="Active Learners" value="1,284" icon={<Users size={24} />} color="#3b82f6" trend="8" delay={0.2} />
-        <StatCard title="Total Trainers" value="42" icon={<Database size={24} />} color="#f59e0b" trend="4" delay={0.3} />
-        <StatCard title="Assessments" value="184" icon={<Award size={24} />} color="#8b5cf6" trend="15" delay={0.4} />
+        <StatCard title="Total Courses" value={stats.courses} icon={<BookOpen size={24} />} color="#10b981" delay={0.1} />
+        <StatCard title="Active Learners" value={stats.students} icon={<Users size={24} />} color="#3b82f6" delay={0.2} />
+        <StatCard title="Total Trainers" value={stats.trainers} icon={<Database size={24} />} color="#f59e0b" delay={0.3} />
+        <StatCard title="Assessments" value={stats.assessments} icon={<Award size={24} />} color="#8b5cf6" delay={0.4} />
       </div>
 
       {/* MAIN LAYOUT SPLIT */}
@@ -165,57 +176,31 @@ const AdminDashboard = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {[
-              { title: 'Advanced Full Stack Web Mastery', status: 'live', users: 342, progress: 84 },
-              { title: 'Python for Deep Neural Networks', status: 'live', users: 156, progress: 92 },
-              { title: 'UI/UX Design Architecture', status: 'draft', users: 0, progress: 0 },
-              { title: 'Strategic Product Management', status: 'live', users: 89, progress: 76 }
-            ].map((course, i) => (
-              <div 
-                key={i} 
-                style={{ 
-                  background: 'var(--color-surface)', padding: '1.25rem', 
-                  borderRadius: '1.5rem', border: '1px solid var(--color-border)',
-                  display: 'flex', alignItems: 'center', gap: '1.5rem',
-                  position: 'relative', overflow: 'hidden'
-                }}
-              >
-                <div style={{ 
-                  width: '4rem', height: '4rem', borderRadius: '1rem', 
-                  backgroundColor: 'var(--color-surface-muted)', display: 'flex', 
-                  alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)'
-                }}>
-                  <Layers size={20} />
-                </div>
-                
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-                    <span className="tech-badge" style={{ 
-                      backgroundColor: course.status === 'live' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                      color: course.status === 'live' ? '#10b981' : '#f59e0b',
-                    }}>
-                      {course.status}
-                    </span>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800 }}>{course.title}</h4>
-                  </div>
-                  <div style={{ display: 'flex', gap: '1.25rem' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{course.users} Active Users</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Deployment Stability: {course.progress}%</div>
-                  </div>
-                </div>
-
-                <div style={{ width: '4px', height: '2rem', background: course.status === 'live' ? '#10b981' : '#f59e0b', borderRadius: '2px' }} />
+            {loading ? (
+              <div style={{ padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
+                 <Activity className="animate-spin" style={{ marginBottom: '1rem' }} />
+                 <p style={{ fontWeight: 950, fontSize: '0.7rem', letterSpacing: '0.1em' }}>SCANNING ECOSYSTEM...</p>
               </div>
-            ))}
+            ) : stats.courses === 0 ? (
+              <div style={{ padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
+                 <Layers size={40} style={{ marginBottom: '1rem' }} />
+                 <p style={{ fontWeight: 950, fontSize: '0.7rem', letterSpacing: '0.1em' }}>NO ACTIVE NODES DETECTED</p>
+              </div>
+            ) : (
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                 <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+                   Synchronized with core registry. {stats.courses} course nodes verified active.
+                 </p>
+                 <button 
+                   onClick={() => navigate('/admin/courses')}
+                   className="btn btn-primary" 
+                   style={{ alignSelf: 'flex-start', padding: '0.75rem 2rem', borderRadius: '1rem' }}
+                 >
+                   Manage Inventory
+                 </button>
+               </div>
+            )}
           </div>
-
-          {/* Decorative Corner Grid */}
-          <div style={{ 
-            position: 'absolute', bottom: 10, right: 10, 
-            width: '60px', height: '60px',
-            backgroundImage: 'radial-gradient(var(--color-border-strong) 1px, transparent 1px)',
-            backgroundSize: '8px 8px', opacity: 0.5
-          }} />
         </div>
 
         {/* RIGHT COLUMN: ACTIONS & UTILITIES */}

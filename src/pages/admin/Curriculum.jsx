@@ -484,6 +484,7 @@ const AdminCurriculum = () => {
                 </div>
                 <button onClick={async () => {
                    setActionLoading(true); try {
+                      const maxPos = (activeAssessment.questions || []).reduce((max, q) => Math.max(max, parseInt(q.position || q.Position || 0)), 0);
                       const res = await fetch(`${ADMIN_API}/create_question`, { 
                         method: 'POST', 
                         headers: headers(), 
@@ -493,7 +494,7 @@ const AdminCurriculum = () => {
                            Mark: parseInt(questionForm.Mark) || 10, 
                            Question_Type: questionForm.Question_Type || 'MCQ', 
                            Explanation: questionForm.Explanation || '', 
-                           Position: (activeAssessment.questions?.length || 0) + 1
+                           Position: maxPos + 1
                         }) 
                       });
                       if (res.ok) {
@@ -514,10 +515,13 @@ const AdminCurriculum = () => {
                               }) 
                            });
                         }
-                       showToast('Question Forged'); await fetchCurriculum(); setShowQuestionForm(false); 
-                       setQuestionForm({ Question_Txt: '', Mark: 10, Question_Type: 'MCQ', Explanation: '', editingId: null }); 
-                       setOptions([{ Option_Txt: '', Is_Correct: false, Position: 1 }, { Option_Txt: '', Is_Correct: false, Position: 2 }]);
-                     } else { showToast('Sync Refused', 'error'); }
+                        showToast('Question Forged'); await fetchCurriculum(); setShowQuestionForm(false); 
+                        setQuestionForm({ Question_Txt: '', Mark: 10, Question_Type: 'MCQ', Explanation: '', editingId: null }); 
+                        setOptions([{ Option_Txt: '', Is_Correct: false, Position: 1 }, { Option_Txt: '', Is_Correct: false, Position: 2 }]);
+                      } else { 
+                        const err = await res.json();
+                        showToast(err.message || 'Sync Refused', 'error'); 
+                      }
                    } finally { setActionLoading(false); }
                 }} className="btn btn-primary" style={{ padding: '1.25rem', borderRadius: '1.5rem', fontSize: '1rem', marginTop: '1.5rem' }}>Commit Question</button>
               </div>
