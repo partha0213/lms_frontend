@@ -109,7 +109,7 @@ const DashboardLayout = () => {
       {/* Sidebar - Coursera inspired high contrast */}
       <aside 
         style={{ 
-          width: '260px', 
+          width: '220px', 
           backgroundColor: 'var(--color-navy-sidebar)', 
           borderRight: '1px solid var(--color-border)',
           display: 'flex',
@@ -120,12 +120,12 @@ const DashboardLayout = () => {
         }}
         className={`sidebar ${mobileMenuOpen ? 'mobile-open' : 'mobile-closed'}`}
       >
-        <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-          <Logo scale={0.7} showTagline={false} isDark={useTheme().isDark} />
+        <div style={{ padding: '1.25rem 1rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Logo scale={0.6} showTagline={false} isDark={useTheme().isDark} />
         </div>
         
-        <div style={{ padding: '1.5rem 1.25rem', flex: 1, overflowY: 'auto' }}>
-          <div style={{ marginBottom: '1.25rem', fontSize: '0.7rem', fontWeight: 900, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.15rem' }}>
+        <div style={{ padding: '1rem 0.75rem', flex: 1, overflowY: 'auto' }}>
+          <div style={{ marginBottom: '1rem', fontSize: '0.65rem', fontWeight: 900, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>
             {user?.role} Portal
           </div>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -270,13 +270,13 @@ const DashboardLayout = () => {
         
         {/* Top Header - Desktop Only */}
         <header style={{ 
-          height: '70px', 
+          height: '56px', 
           backgroundColor: 'var(--color-surface)', 
           borderBottom: '1px solid var(--color-border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 2rem',
+          padding: '0 1.5rem',
           zIndex: 40
         }} className="hidden md:flex">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>

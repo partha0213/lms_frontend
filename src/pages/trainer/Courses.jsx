@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/AuthContext';
-import { Book, Loader2, Search, Filter, MoreVertical, LayoutGrid, List as ListIcon, ShieldCheck } from 'lucide-react';
+import { Book, Loader2, Search, Filter, MoreVertical, LayoutGrid, List as ListIcon, ShieldCheck, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { ADMIN_API } from '../../config';
@@ -71,33 +71,33 @@ const TrainerCourses = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', color: 'var(--color-text)', paddingBottom: '10rem' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', color: 'var(--color-text)', paddingBottom: '6rem' }}>
       
       {/* COMPACT MODERNISED HEADER */}
-      <div style={{ backgroundColor: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', padding: '1.5rem 0' }}>
+      <div style={{ backgroundColor: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', padding: '1.25rem 0' }}>
          <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '0 var(--page-padding)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', color: 'var(--color-primary)', marginBottom: '0.4rem' }}>
-                  <Book size={18} /><span style={{ fontSize: '0.65rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Trainer Portal</span>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)', marginBottom: '0.2rem' }}>
+                  <ShieldCheck size={14} /><span style={{ fontSize: '0.6rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Faculty Node</span>
                </div>
-               <h1 style={{ margin: 0, fontSize: '1.85rem', fontWeight: 950, letterSpacing: '-0.03em' }}>My Course Repository</h1>
+               <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 950, letterSpacing: '-0.03em' }}>Course Repository</h2>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
-                  <Search size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }} />
+                  <Search size={15} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                   <input 
                     type="text" 
-                    placeholder="Search courses..." 
+                    placeholder="Search node IDs..." 
                     value={searchQuery} 
                     onChange={(e) => setSearchQuery(e.target.value)} 
-                    style={{ width: 'clamp(200px, 20vw, 300px)', padding: '0.9rem 1.5rem 0.9rem 3.5rem', backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)', borderRadius: '1.25rem', fontSize: '1rem', fontWeight: 650, outline: 'none', color: 'var(--color-text)' }} 
+                    style={{ width: '240px', padding: '0.55rem 1rem 0.55rem 2.5rem', backgroundColor: 'var(--color-surface-muted)', border: '1px solid var(--color-border)', borderRadius: '0.85rem', fontSize: '0.85rem', fontWeight: 700, outline: 'none', color: 'var(--color-text)' }} 
                   />
                 </div>
                 
-                <div style={{ display: 'flex', backgroundColor: 'var(--color-surface-muted)', padding: '0.35rem', borderRadius: '1.25rem', border: '1px solid var(--color-border)' }}>
-                  <button onClick={() => setViewMode('grid')} style={{ padding: '0.6rem 0.85rem', borderRadius: '0.9rem', border: 'none', background: viewMode === 'grid' ? 'var(--color-surface)' : 'transparent', color: viewMode === 'grid' ? 'var(--color-primary)' : 'var(--color-text-light)', cursor: 'pointer', transition: 'all 0.3s' }}><LayoutGrid size={20}/></button>
-                  <button onClick={() => setViewMode('list')} style={{ padding: '0.6rem 0.85rem', borderRadius: '0.9rem', border: 'none', background: viewMode === 'list' ? 'var(--color-surface)' : 'transparent', color: viewMode === 'list' ? 'var(--color-primary)' : 'var(--color-text-light)', cursor: 'pointer', transition: 'all 0.3s' }}><ListIcon size={20}/></button>
+                <div style={{ display: 'flex', backgroundColor: 'var(--color-surface-muted)', padding: '0.25rem', borderRadius: '0.85rem', border: '1px solid var(--color-border)' }}>
+                  <button onClick={() => setViewMode('grid')} style={{ padding: '0.45rem 0.65rem', borderRadius: '0.65rem', border: 'none', background: viewMode === 'grid' ? 'var(--color-surface)' : 'transparent', color: viewMode === 'grid' ? 'var(--color-primary)' : 'var(--color-text-light)', cursor: 'pointer', transition: 'all 0.3s' }}><LayoutGrid size={16}/></button>
+                  <button onClick={() => setViewMode('list')} style={{ padding: '0.45rem 0.65rem', borderRadius: '0.65rem', border: 'none', background: viewMode === 'list' ? 'var(--color-surface)' : 'transparent', color: viewMode === 'list' ? 'var(--color-primary)' : 'var(--color-text-light)', cursor: 'pointer', transition: 'all 0.3s' }}><ListIcon size={16}/></button>
                 </div>
             </div>
          </div>
@@ -105,99 +105,95 @@ const TrainerCourses = () => {
 
 
       {loading ? (
-        <div style={{ padding: '10rem 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '1.5rem' }}>
-           <Loader2 size={40} className="animate-spin" color="var(--color-primary)" />
-           <p style={{ fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>Loading your courses...</p>
+        <div style={{ padding: '8rem 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '1.25rem' }}>
+           <Loader2 size={32} className="animate-spin" color="var(--color-primary)" />
+           <p style={{ fontWeight: 800, fontSize: '0.75rem', color: 'var(--color-text-muted)', letterSpacing: '0.1em' }}>SYNCING RECORDS...</p>
         </div>
       ) : (
         <div className="arcade-container" style={{ 
           backgroundColor: 'var(--color-surface-muted)', 
-          padding: '2.5rem', 
-          borderRadius: '3.5rem', 
-          boxShadow: 'inset 0 10px 40px rgba(0,0,0,0.1)',
-          border: '1px solid var(--color-border)',
-          minHeight: '600px',
-          position: 'relative',
-          overflow: 'hidden'
+          padding: '2rem', 
+          borderRadius: '2.5rem', 
+          minHeight: '500px'
         }}>
-          {/* Subtle Technical Pattern Overlay for Inset */}
-          <div style={{ position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle at 2px 2px, var(--color-text) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+          <div style={{ position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle at 2px 2px, var(--color-text) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+          
           {filteredCourses.length === 0 ? (
             <div style={{ padding: '6rem', textAlign: 'center' }}>
-              <Book size={64} style={{ margin: '0 auto 1.5rem', opacity: 0.1 }} />
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '1.25rem', fontWeight: 600 }}>No matching courses found in your repository.</p>
+              <Book size={48} style={{ margin: '0 auto 1.25rem', opacity: 0.1 }} />
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', fontWeight: 600 }}>No matching courses found in your repository.</p>
             </div>
           ) : (
             <div className={viewMode === 'grid' ? 'grid' : ''} style={{ 
               display: viewMode === 'grid' ? 'grid' : 'flex', 
               flexDirection: viewMode === 'list' ? 'column' : 'unset',
-              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(380px, 1fr))' : 'unset', 
-              gap: '1.5rem' 
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(320px, 1fr))' : 'unset', 
+              gap: '1.25rem',
+              position: 'relative', zIndex: 1
             }}>
               {filteredCourses.map((course) => (
                 <div 
                   key={course.course_id} 
                   className="course-glow-card" 
                   style={{ 
-                    padding: viewMode === 'grid' ? '2.5rem' : '2rem', 
+                    padding: viewMode === 'grid' ? '1.75rem' : '1.25rem 1.75rem', 
                     display: 'flex', 
                     flexDirection: viewMode === 'grid' ? 'column' : 'row',
                     justifyContent: 'space-between', 
                     alignItems: viewMode === 'grid' ? 'flex-start' : 'center', 
                     transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
-                    borderRadius: '2.5rem', 
+                    borderRadius: '1.75rem', 
                     backgroundColor: 'var(--color-surface)',
                     border: '1px solid var(--color-border)',
-                    gap: viewMode === 'grid' ? '2rem' : '0'
+                    gap: viewMode === 'grid' ? '1.5rem' : '0'
                   }}
                 >
-                  <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flex: 1, width: '100%' }}>
+                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flex: 1, minWidth: 0 }}>
                     <div style={{ 
-                      width: '80px', 
-                      height: '80px', 
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                      width: '48px', 
+                      height: '48px', 
+                      backgroundColor: 'rgba(16, 185, 129, 0.08)', 
                       color: '#10b981', 
-                      borderRadius: '1.5rem', 
+                      borderRadius: '1rem', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
-                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      border: '1px solid rgba(16, 185, 129, 0.15)',
                       flexShrink: 0
                     }}>
-                      <Book size={36} />
+                      <BookOpen size={20} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ margin: '0 0 0.6rem 0', fontSize: '1.6rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '-0.03em' }}>
+                      <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.15rem', fontWeight: 950, color: 'var(--color-text)', letterSpacing: '-0.02em' }}>
                         {course.course_title}
                       </h3>
-                      <p style={{ margin: '0 0 1.25rem 0', color: 'var(--color-text-muted)', fontSize: '1rem', lineHeight: 1.6, maxWidth: '650px', display: '-webkit-box', WebkitLineClamp: viewMode === 'grid' ? 3 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <p style={{ margin: '0 0 0.85rem 0', color: 'var(--color-text-muted)', fontSize: '0.8rem', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: viewMode === 'grid' ? 2 : 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {course.course_description}
                       </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        <span style={{ color: '#10b981' }}>● Assigned Course</span>
-                        <span style={{ color: 'var(--color-text-muted)' }}>• Type: {course.course_type || 'LMS Course'}</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.6rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        <span style={{ color: '#10b981' }}>● Assigned</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>• {course.course_type || 'RECORDED'}</span>
                         <span style={{ color: 'var(--color-text-muted)' }}>• ID: {course.course_id.slice(0, 8)}</span>
                       </div>
                     </div>
                   </div>
                   <div style={{ 
                     display: 'flex', 
-                    gap: '1rem', 
+                    gap: '0.75rem', 
                     alignItems: 'center', 
-                    marginLeft: viewMode === 'list' ? '2rem' : '0',
-                    marginTop: viewMode === 'grid' ? '1rem' : '0',
+                    marginLeft: viewMode === 'list' ? '1.5rem' : '0',
                     width: viewMode === 'grid' ? '100%' : 'auto',
                     justifyContent: viewMode === 'grid' ? 'flex-end' : 'unset'
                   }}>
                     <button 
                       onClick={() => navigate(`/manage/course/${course.course_id}`)}
                       className="btn btn-primary" 
-                      style={{ padding: '0.9rem 2.5rem', borderRadius: '1.25rem', fontWeight: 950, fontSize: '0.95rem', boxShadow: '0 10px 25px rgba(16, 185, 129, 0.2)' }}
+                      style={{ padding: '0.65rem 1.75rem', borderRadius: '1rem', fontWeight: 950, fontSize: '0.85rem' }}
                     >
-                      Edit Curriculum
+                      Studio Architect
                     </button>
-                    <button style={{ color: 'var(--color-text-muted)', padding: '0.8rem', border: 'none', background: 'var(--color-surface-muted)', borderRadius: '1.15rem', cursor: 'pointer' }}>
-                      <MoreVertical size={20} />
+                    <button style={{ color: 'var(--color-text-muted)', padding: '0.65rem', border: 'none', background: 'var(--color-surface-muted)', borderRadius: '1rem', cursor: 'pointer' }}>
+                      <MoreVertical size={16} />
                     </button>
                   </div>
                 </div>
@@ -206,6 +202,7 @@ const TrainerCourses = () => {
           )}
         </div>
       )}
+
       <style>{`
         .course-glow-card:hover {
           transform: translateY(-8px) scale(1.01);

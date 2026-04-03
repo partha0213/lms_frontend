@@ -18,28 +18,28 @@ const StatCard = ({ title, value, icon, color, trend, delay }) => (
     className="premium-glow-card" 
     style={{ flex: 1, minWidth: '240px' }}
   >
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
       <div style={{ 
-        width: '3.5rem', height: '3.5rem', borderRadius: '1.25rem', 
+        width: '2.5rem', height: '2.5rem', borderRadius: '0.75rem', 
         backgroundColor: `${color}15`, color: color, 
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         border: `1px solid ${color}30`
       }}>
-        {icon}
+        {React.cloneElement(icon, { size: 20 })}
       </div>
       {trend && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#10b981', fontSize: '0.75rem', fontWeight: 800 }}>
-          <TrendingUp size={14} /> <span>+{trend}%</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#10b981', fontSize: '0.65rem', fontWeight: 800 }}>
+          <TrendingUp size={12} /> <span>+{trend}%</span>
         </div>
       )}
     </div>
     
     <div>
       <div style={{ 
-        fontSize: '0.7rem', fontWeight: 950, textTransform: 'uppercase', 
-        letterSpacing: '0.12em', color: 'var(--color-text-muted)', marginBottom: '0.5rem' 
+        fontSize: '0.65rem', fontWeight: 950, textTransform: 'uppercase', 
+        letterSpacing: '0.1em', color: 'var(--color-text-muted)', marginBottom: '0.35rem' 
       }}>{title}</div>
-      <div style={{ fontSize: '2.25rem', fontWeight: 950, letterSpacing: '-0.04em' }}>{value}</div>
+      <div style={{ fontSize: '1.75rem', fontWeight: 950, letterSpacing: '-0.03em' }}>{value}</div>
     </div>
     
     {/* Tech Detail Overlay */}
@@ -127,14 +127,14 @@ const AdminDashboard = () => {
     <div style={{ padding: 'var(--page-padding)', maxWidth: '1600px', margin: '0 auto' }} className="animate-fade-in">
       
       {/* HEADER COMMAND SECTION */}
-      <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '2rem', flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1.5rem', flexWrap: 'wrap' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
-            <Activity size={16} />
-            <span style={{ fontSize: '0.7rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Real-time Operations</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>
+            <Activity size={12} />
+            <span style={{ fontSize: '0.65rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Real-time Operations</span>
           </div>
-          <h1>System Overview</h1>
-          <p style={{ margin: 0, maxWidth: '500px' }}>
+          <h2 style={{ margin: '0 0 0.5rem 0' }}>System Overview</h2>
+          <p style={{ margin: 0, maxWidth: '450px', fontSize: '0.8rem' }}>
             Manage core telemetry data, course structures, and ecosystem participants from the central node.
           </p>
         </div>
@@ -152,19 +152,19 @@ const AdminDashboard = () => {
       </div>
 
       {/* METRICS GRID */}
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-        <StatCard title="Total Courses" value={stats.courses} icon={<BookOpen size={24} />} color="#10b981" delay={0.1} />
-        <StatCard title="Active Learners" value={stats.students} icon={<Users size={24} />} color="#3b82f6" delay={0.2} />
-        <StatCard title="Total Trainers" value={stats.trainers} icon={<Database size={24} />} color="#f59e0b" delay={0.3} />
-        <StatCard title="Assessments" value={stats.assessments} icon={<Award size={24} />} color="#8b5cf6" delay={0.4} />
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+        <StatCard title="Total Courses" value={stats.courses} icon={<BookOpen size={20} />} color="#10b981" delay={0.1} />
+        <StatCard title="Active Learners" value={stats.students} icon={<Users size={20} />} color="#3b82f6" delay={0.2} />
+        <StatCard title="Total Trainers" value={stats.trainers} icon={<Database size={20} />} color="#f59e0b" delay={0.3} />
+        <StatCard title="Assessments" value={stats.assessments} icon={<Award size={20} />} color="#8b5cf6" delay={0.4} />
       </div>
 
       {/* MAIN LAYOUT SPLIT */}
-      <div className="grid" style={{ gridTemplateColumns: '1fr 340px', gap: '3rem', alignItems: 'start' }}>
+      <div className="grid" style={{ gridTemplateColumns: '1fr 300px', gap: '2rem', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: ARCADE CONTAINER */}
-        <div className="arcade-container" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div className="arcade-container" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0 }}>Active Evolution Node</h3>
             <button 
               onClick={() => navigate('/admin/courses')}
