@@ -47,7 +47,7 @@ const GoogleLogin = ({ onLoginSuccess, onLoginError }) => {
       initializedRef.current = true;
 
       window.google.accounts.id.initialize({
-        client_id: "50391096209-j049mjc9nfqv7rncaldf4i4j8hjh285p.apps.googleusercontent.com",
+        client_id: "50391096209-bejc51ouekqft0ban0f8s76f8345v0ks.apps.googleusercontent.com",
         callback: handleCredentialResponse,
       });
 
