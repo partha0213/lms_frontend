@@ -36,7 +36,7 @@ const TrainerDashboard = () => {
   const { user, accessToken } = useAuth();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
-  const [sessions, setSessions] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTrainerData = useCallback(async () => {
@@ -44,9 +44,9 @@ const TrainerDashboard = () => {
     setLoading(true);
     const headers = { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' };
     try {
-      const [courseRes, sessionRes] = await Promise.all([
+      const [courseRes, studentRes] = await Promise.all([
         fetch(`${ADMIN_API}/trainer_course_ids`, { headers }),
-        fetch(`${ADMIN_API}/instructor/${user.user_id}/live-sessions`, { headers })
+        fetch(`${ADMIN_API}/instructor/${user.user_id}/students`, { headers })
       ]);
 
       if (courseRes.ok) {
@@ -71,9 +71,9 @@ const TrainerDashboard = () => {
         setCourses(fullCourses);
       }
       
-      if (sessionRes.ok) {
-        const data = await sessionRes.json();
-        setSessions(data.live_sessions || []);
+      if (studentRes.ok) {
+        const data = await studentRes.json();
+        setStudents(data.students || []);
       }
     } catch (err) {
       console.error("Critical architecture sync failure", err);
@@ -96,7 +96,7 @@ const TrainerDashboard = () => {
           </div>
           <h2 style={{ margin: '0 0 0.5rem 0' }}>Welcome, {user?.name || 'Trainer Node'}</h2>
           <p style={{ margin: 0, maxWidth: '450px', fontSize: '0.8rem' }}>
-            Manage your assigned knowledge nodes and upcoming live instruction protocols.
+            Manage your assigned knowledge nodes and track active student enrollment metrics.
           </p>
         </div>
       </div>
@@ -104,9 +104,9 @@ const TrainerDashboard = () => {
       {/* METRICS GRID */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         <StatCard title="Assigned Nodes" value={courses.length} icon={<Book size={20} />} color="var(--color-primary)" delay={0.1} />
-        <StatCard title="Active Streams" value={courses.filter(c => c.status === 'live').length} icon={<Users size={20} />} color="#3b82f6" delay={0.2} />
-        <StatCard title="Live Schedule" value={sessions.length} icon={<Video size={20} />} color="#8b5cf6" delay={0.3} />
-        <StatCard title="Draft Stage" value={courses.filter(c => c.status === 'draft').length} icon={<Grid size={20} />} color="#f59e0b" delay={0.4} />
+        <StatCard title="Total Students" value={students.length} icon={<Users size={20} />} color="#3b82f6" delay={0.2} />
+        <StatCard title="Avg. Progress" value={`${Math.round(students.reduce((acc, s) => acc + (s.progress || 0), 0) / (students.length || 1))}%`} icon={<Shield size={20} />} color="#8b5cf6" delay={0.3} />
+        <StatCard title="Active Status" value={courses.filter(c => c.status === 'live').length} icon={<Activity size={20} />} color="#10b981" delay={0.4} />
       </div>
 
       {loading ? (
@@ -129,9 +129,11 @@ const TrainerDashboard = () => {
             {courses.map(course => (
               <div 
                 key={course.course_id} 
+                className="hover-card"
                 style={{ 
                   background: 'var(--color-surface)', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--color-border)',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  transition: 'all 0.3s'
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -142,49 +144,66 @@ const TrainerDashboard = () => {
                     }}>{course.status}</span>
                     <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800 }}>{course.course_title}</h4>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>ID: {course.course_id}</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.6 }}>ID: {course.course_id}</p>
                 </div>
                 <button 
                   onClick={() => navigate(`/manage/course/${course.course_id}`)}
                   className="btn btn-primary" 
-                  style={{ padding: '0.4rem 1rem', borderRadius: '0.75rem' }}
+                  style={{ padding: '0.4rem 1rem', borderRadius: '0.75rem', fontSize: '0.75rem' }}
                 >Manage</button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* RIGHT COLUMN: UPCOMING SESSIONS */}
+        {/* RIGHT COLUMN: RECENT STUDENTS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="premium-glow-card" style={{ padding: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
-              <Calendar size={16} /> Live Protocol
-            </h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+               <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                 <Users size={16} /> Recent Activity
+               </h4>
+               <button onClick={() => navigate('/trainer/students')} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer' }}>VIEW ALL</button>
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {sessions.length === 0 && <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.8rem' }}>No active streams scheduled.</p>}
-              {sessions.map(session => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {students.length === 0 && <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.8rem' }}>No student activity detected.</p>}
+              {students.slice(0, 5).map(student => (
                 <div 
-                  key={session.live_id} 
+                  key={student.email} 
                   style={{ 
-                    display: 'flex', gap: '0.75rem', padding: '0.75rem', 
-                    background: 'var(--color-surface-muted)', borderRadius: '1rem',
-                    border: '1px solid var(--color-border)'
+                    display: 'flex', gap: '0.75rem', alignItems: 'center'
                   }}
                 >
-                  <div style={{ textAlign: 'center', borderRight: '1px solid var(--color-border)', paddingRight: '0.75rem', minWidth: '60px' }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 950, color: 'var(--color-primary)' }}>{new Date(session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                    <div style={{ fontSize: '0.55rem', fontWeight: 800, opacity: 0.5 }}>TIME</div>
+                  <div style={{ 
+                    width: '32px', height: '32px', borderRadius: '8px', 
+                    backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.8rem', fontWeight: 950
+                  }}>
+                    {(student.name || 'S').charAt(0)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 800, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{session.title || 'Instruction Node'}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>Status: {session.status}</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{student.name || student.username}</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>Progress: {student.progress || 0}%</div>
+                  </div>
+                  <div style={{ width: '40px', height: '4px', backgroundColor: 'var(--color-border)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ width: `${student.progress || 0}%`, height: '100%', backgroundColor: 'var(--color-primary)' }} />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
+          <div className="premium-glow-card" style={{ padding: '1.5rem', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', color: 'white' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <Activity size={16} color="#6366f1" />
+                <span style={{ fontSize: '0.65rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmission Sync</span>
+             </div>
+             <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+               Your instructor node is currently synchronizing with {students.length} active students across {courses.length} knowledge segments.
+             </p>
+          </div>
           <div className="premium-glow-card" style={{ padding: '1.5rem', background: 'var(--navy-950)', color: 'white' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 <Shield size={16} color="var(--color-primary)" />

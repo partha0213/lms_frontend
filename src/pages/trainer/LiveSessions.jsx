@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback, React } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/AuthContext';
 import { Video, Calendar, Clock, Users, PlusCircle, Loader2, Activity, ArrowRight, ShieldCheck } from 'lucide-react';
 import { ADMIN_API } from '../../config';
 
 const LiveSessions = () => {
   const { user, accessToken } = useAuth();
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +29,51 @@ const LiveSessions = () => {
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
+  // Group and sort sessions
+  const { liveSessions, upcomingSessions, passedSessions } = (sessions || []).reduce((acc, s) => {
+    const isLive = s.status === 'live';
+    const isUpcoming = s.status !== 'live' && new Date(s.start_time) > new Date();
+    if (isLive) acc.liveSessions.push(s);
+    else if (isUpcoming) acc.upcomingSessions.push(s);
+    else acc.passedSessions.push(s);
+    return acc;
+  }, { liveSessions: [], upcomingSessions: [], passedSessions: [] });
+
+  // Sort upcoming by start time
+  upcomingSessions.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+  const SessionRow = ({ session, isLive, i }) => (
+    <tr key={session.live_id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background 0.3s', backgroundColor: isLive ? 'rgba(16, 185, 129, 0.02)' : 'transparent' }}>
+      <td style={{ padding: '1.5rem 2rem' }}>
+        <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.95rem', marginBottom: '0.35rem' }}>{session.title || 'Instruction Node'}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+           <ShieldCheck size={12} color="var(--color-primary)" /> ID: {session.course_id}
+        </div>
+      </td>
+      <td style={{ padding: '1.5rem 2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text)', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>
+          <Calendar size={13} style={{ color: 'var(--color-primary)' }} /> {new Date(session.start_time).toLocaleDateString()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+          <Clock size={13} /> {new Date(session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+        </div>
+      </td>
+      <td style={{ padding: '1.5rem 2rem' }}>
+        <span className="tech-badge" style={{ 
+          backgroundColor: isLive ? 'rgba(16, 185, 129, 0.1)' : 'var(--color-surface-muted)',
+          color: isLive ? '#10b981' : (new Date(session.start_time) > new Date() ? '#f59e0b' : 'var(--color-text-muted)')
+        }}>{isLive ? '● Live Now' : (new Date(session.start_time) > new Date() ? '● Upcoming' : '● Completed')}</span>
+      </td>
+      <td style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>
+        <a href={session.meeting_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+          <button className="btn btn-primary" style={{ padding: '0.5rem 1.5rem', borderRadius: '0.85rem', fontSize: '0.8rem', background: isLive ? '#10b981' : undefined, borderColor: isLive ? '#10b981' : undefined }}>
+            {isLive ? <><Video size={14} /> Start Session</> : (new Date(session.start_time) > new Date() ? 'Join Lobby' : 'View Archive')}
+          </button>
+        </a>
+      </td>
+    </tr>
+  );
+
   return (
     <div className="animate-fade-in" style={{ maxWidth: '1600px', margin: '0 auto', padding: 'var(--page-padding)' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1.5rem', marginBottom: '2.5rem' }}>
@@ -40,74 +87,77 @@ const LiveSessions = () => {
             Schedule and synchronize your interactive virtual classes with actual student nodes.
           </p>
         </div>
-        <button className="btn btn-primary" style={{ padding: '0.75rem 1.75rem', borderRadius: '1.15rem' }}>
-          <PlusCircle size={16} /> Schedule Session
+        <button className="btn btn-primary" onClick={() => navigate('/trainer/courses')} style={{ padding: '0.75rem 1.75rem', borderRadius: '1.15rem' }}>
+          <PlusCircle size={16} /> New Live Class
         </button>
       </div>
 
-      <div className="arcade-container" style={{ padding: '0', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, pointerEvents: 'none', backgroundImage: 'radial-gradient(circle at 2px 2px, var(--color-text) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-        
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
-            <thead style={{ backgroundColor: 'var(--color-surface-muted)', borderBottom: '1px solid var(--color-border)' }}>
-              <tr style={{ color: 'var(--color-text-muted)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-                <th style={{ padding: '1.25rem 2rem', fontWeight: 950 }}>Stream Context</th>
-                <th style={{ padding: '1.25rem 2rem', fontWeight: 950 }}>Logical Schedule</th>
-                <th style={{ padding: '1.25rem 2rem', fontWeight: 950 }}>Status</th>
-                <th style={{ padding: '1.25rem 2rem', fontWeight: 950, textAlign: 'right' }}>Operations</th>
-              </tr>
-            </thead>
-            <tbody style={{ position: 'relative', zIndex: 1, backgroundColor: 'var(--color-surface)' }}>
-              {loading ? (
-                <tr>
-                  <td colSpan="4" style={{ padding: '6rem', textAlign: 'center', opacity: 0.5 }}>
-                     <Loader2 className="animate-spin" style={{ margin: '0 auto 1.25rem auto' }} size={24} />
-                     <p style={{ fontWeight: 950, fontSize: '0.7rem', letterSpacing: '0.1em' }}>SYNCING LIVE NODES...</p>
-                  </td>
-                </tr>
-              ) : sessions.length === 0 ? (
-                <tr>
-                  <td colSpan="4" style={{ padding: '6rem', textAlign: 'center', opacity: 0.5 }}>
-                     <Video size={48} style={{ margin: '0 auto 1.25rem auto' }} />
-                     <p style={{ fontWeight: 950, fontSize: '0.9rem' }}>NO LIVE SESSIONS SCHEDULED</p>
-                  </td>
-                </tr>
-              ) : (
-                sessions.map((session, i) => (
-                  <tr key={session.live_id} style={{ borderBottom: i === sessions.length - 1 ? 'none' : '1px solid var(--color-border)', transition: 'background 0.3s' }}>
-                    <td style={{ padding: '1.5rem 2rem' }}>
-                      <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.95rem', marginBottom: '0.35rem' }}>{session.title || 'Instruction Node'}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                         <ShieldCheck size={12} color="var(--color-primary)" /> ID: {session.course_id}
-                      </div>
-                    </td>
-                    <td style={{ padding: '1.5rem 2rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text)', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>
-                        <Calendar size={13} style={{ color: 'var(--color-primary)' }} /> {new Date(session.start_time).toLocaleDateString()}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
-                        <Clock size={13} /> {new Date(session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </div>
-                    </td>
-                    <td style={{ padding: '1.5rem 2rem' }}>
-                      <span className="tech-badge" style={{ 
-                        backgroundColor: session.status === 'live' ? 'rgba(16, 185, 129, 0.1)' : 'var(--color-surface-muted)',
-                        color: session.status === 'live' ? '#10b981' : 'var(--color-text-muted)'
-                      }}>{session.status === 'live' ? '● Live' : '● Scheduled'}</span>
-                    </td>
-                    <td style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>
-                      <button className="btn btn-primary" style={{ padding: '0.5rem 1.5rem', borderRadius: '0.85rem', fontSize: '0.8rem' }}>
-                        {session.status === 'live' ? <><Video size={14} /> Start</> : 'Join Registry'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {loading ? (
+        <div style={{ padding: '8rem', textAlign: 'center', opacity: 0.5 }}>
+           <Loader2 className="animate-spin" style={{ margin: '0 auto 1.25rem auto' }} size={24} />
+           <p style={{ fontWeight: 950, fontSize: '0.7rem', letterSpacing: '0.1em' }}>SYNCING LIVE NODES...</p>
         </div>
-      </div>
+      ) : sessions.length === 0 ? (
+        <div style={{ padding: '8rem', textAlign: 'center', opacity: 0.5, backgroundColor: 'var(--color-surface)', borderRadius: '2rem', border: '1px solid var(--color-border)' }}>
+           <Video size={48} style={{ margin: '0 auto 1.25rem auto' }} />
+           <p style={{ fontWeight: 950, fontSize: '0.9rem' }}>NO LIVE SESSIONS SCHEDULED</p>
+           <button onClick={() => navigate('/trainer/courses')} className="btn btn-ghost" style={{ marginTop: '1rem' }}>Create First Live Session</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+          
+          {/* LIVE NOW SECTION */}
+          {(liveSessions.length > 0) && (
+            <div>
+              <h3 style={{ fontSize: '0.65rem', fontWeight: 950, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.5s infinite' }} /> Active Transmissions
+              </h3>
+              <div className="arcade-container" style={{ padding: '0', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <tbody style={{ backgroundColor: 'var(--color-surface)' }}>
+                    {liveSessions.map((s, i) => <SessionRow key={s.live_id} session={s} isLive={true} i={i} />)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* UPCOMING SECTION */}
+          <div>
+            <h3 style={{ fontSize: '0.65rem', fontWeight: 950, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Calendar size={13} /> Scheduled Streams ({upcomingSessions.length})
+            </h3>
+            <div className="arcade-container" style={{ padding: '0', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <tbody style={{ backgroundColor: 'var(--color-surface)' }}>
+                  {upcomingSessions.length === 0 ? (
+                    <tr><td style={{ padding: '4rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 800 }}>No upcoming sessions scheduled</td></tr>
+                  ) : upcomingSessions.map((s, i) => <SessionRow key={s.live_id} session={s} isLive={false} i={i} />)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* HISTORY / PAST SECTION */}
+          {passedSessions.length > 0 && (
+            <div style={{ opacity: 0.6 }}>
+              <h3 style={{ fontSize: '0.65rem', fontWeight: 950, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Activity size={13} /> Transmission History
+              </h3>
+              <div className="arcade-container" style={{ padding: '0', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <tbody style={{ backgroundColor: 'var(--color-surface)' }}>
+                    {passedSessions.map((s, i) => <SessionRow key={s.live_id} session={s} isLive={false} i={i} />)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <style>{`
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+      `}</style>
     </div>
   );
 };

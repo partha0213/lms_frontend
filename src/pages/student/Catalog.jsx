@@ -11,7 +11,8 @@ import { ADMIN_API, STUDENT_API } from '../../config';
 
 /* ── Enrollment Confirmation Modal ── */
 function EnrollModal({ course, onConfirm, onCancel }) {
-  const isLive = course?.type?.toLowerCase() === 'live';
+  const typeLower = (course?.type || course?.course_type || course?.course_Type || 'recorded').toLowerCase();
+  const isLive = typeLower === 'live' || typeLower === 'live_course' || typeLower === 'live session';
 
   const formatPrice = () => {
     if (!course) return 'Free';
@@ -267,7 +268,7 @@ const Catalog = () => {
                   id: c.course_id || id,
                   course_id: c.course_id || id,
                   title: c.course_title || c.title || 'Untitled',
-                  type: c.type || c.course_Type || 'recorded',
+                  type: c.type || c.course_type || c.course_Type || 'recorded',
                   thumbnail: c.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800'
                 });
               }
@@ -318,7 +319,7 @@ const Catalog = () => {
   const getTypeColor = (type) => {
     if (!type) return { bg: '#f8f7ff', text: '#6366f1' };
     const t = type.toLowerCase();
-    if (t === 'live') return { bg: '#fef2f2', text: '#ef4444' };
+    if (t === 'live' || t === 'live_course' || t === 'live session') return { bg: '#fef2f2', text: '#ef4444' };
     return { bg: '#f0fdf4', text: '#10b981' };
   };
 
@@ -479,6 +480,34 @@ const Catalog = () => {
                 <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
                   {course.type}
                 </p>
+
+                {course.type?.toLowerCase()?.includes('live') && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    {(() => {
+                        const now = new Date();
+                        const sessions = [];
+                        (course.modules || []).forEach(m => (m.content?.live_sessions || []).forEach(ls => sessions.push(ls)));
+                        const active = sessions.find(s => {
+                            const start = new Date(s.start_time);
+                            const end = new Date(s.end_time);
+                            return (now >= start && now <= end) || (now >= new Date(start.getTime() - 15 * 60 * 1000) && now < start);
+                        });
+                        
+                        if (active) {
+                            const isStarting = now < new Date(active.start_time);
+                            return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: isStarting ? '#fff7ed' : '#f0fdf4', border: `1px solid ${isStarting ? '#fdba74' : '#86efac'}`, padding: '0.5rem 0.8rem', borderRadius: '0.75rem' }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isStarting ? '#f97316' : '#10b981', animation: 'pulse 1.5s infinite' }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: isStarting ? '#9a3412' : '#166534' }}>
+                                        {isStarting ? 'Starting Soon!' : 'Session Live Now!'}
+                                    </span>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
+                  </div>
+                )}
 
                 <div style={{ marginTop: 'auto' }}>
                   {/* Meta */}

@@ -42,7 +42,7 @@ const StudentCourses = () => {
   const getTypeColor = (type) => {
     if (!type) return { bg: '#f8f7ff', text: '#6366f1', label: 'Recorded' };
     const t = type.toLowerCase();
-    if (t === 'live') return { bg: '#fef2f2', text: '#ef4444', label: 'Live' };
+    if (t === 'live' || t === 'live_course' || t === 'live session') return { bg: '#fef2f2', text: '#ef4444', label: 'Live' };
     return { bg: '#f0fdf4', text: '#10b981', label: 'Recorded' };
   };
 

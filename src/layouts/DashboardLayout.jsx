@@ -87,7 +87,6 @@ const DashboardLayout = () => {
         return [
           { to: '/trainer', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
           { to: '/trainer/courses', icon: <Book size={20} />, label: 'My Courses' },
-          { to: '/trainer/live', icon: <Video size={20} />, label: 'Live Sessions' },
           { to: '/trainer/students', icon: <Users size={20} />, label: 'Students' },
         ];
       case 'student':

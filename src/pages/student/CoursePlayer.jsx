@@ -255,10 +255,17 @@ function MarkCompleteButton({ isDone, onMark }) {
 /* ══════════════════════════════════════════════════
    MAIN COURSE PLAYER
 ══════════════════════════════════════════════════ */
-const CoursePlayer = () => {
+const CoursePlayer = ({ isTrainer = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { markLessonComplete, isLessonComplete, getCompletedCount, enrolledCourses, registerLessonCount } = useEnrollment();
+  const enrollment = useEnrollment();
+  
+  // Safe extraction of enrollment hooks/data
+  const markLessonComplete = isTrainer ? () => {} : enrollment?.markLessonComplete;
+  const isLessonComplete = isTrainer ? () => false : enrollment?.isLessonComplete;
+  const getCompletedCount = isTrainer ? () => 0 : enrollment?.getCompletedCount;
+  const enrolledCourses = isTrainer ? [] : enrollment?.enrolledCourses;
+  const registerLessonCount = isTrainer ? () => {} : enrollment?.registerLessonCount;
 
   const [course, setCourse]               = useState(null);
   const [lessons, setLessons]             = useState([]);
@@ -271,10 +278,12 @@ const CoursePlayer = () => {
 
   // DEBUG LOG
   useEffect(() => {
-    console.log('CoursePlayer: Active Course ID from URL:', id);
-    const enrolledItem = enrolledCourses.find(c => String(c.id || c.course_id) === String(id));
-    console.log('CoursePlayer: Enrollment status:', enrolledItem ? 'ENROLLED' : 'NOT ENROLLED', enrolledItem);
-  }, [id, enrolledCourses]);
+    console.log('CoursePlayer: Active Course ID from URL:', id, 'TrainerMode:', isTrainer);
+    if (!isTrainer) {
+      const enrolledItem = enrolledCourses?.find(c => String(c.id || c.course_id) === String(id));
+      console.log('CoursePlayer: Enrollment status:', enrolledItem ? 'ENROLLED' : 'NOT ENROLLED', enrolledItem);
+    }
+  }, [id, enrolledCourses, isTrainer]);
 
   useEffect(() => {
     (async () => {
@@ -286,11 +295,26 @@ const CoursePlayer = () => {
         if (data.status && data.course) {
           const c = data.course;
           setCourse(c);
-          const isLive = c.type?.toLowerCase() === 'live';
+          const typeLower = (c.type || c.course_type || c.course_Type || 'recorded').toLowerCase();
+          const isLive = typeLower === 'live' || typeLower === 'live_course' || typeLower === 'live session';
           const built  = buildLessons(c.modules, isLive);
           setLessons(built);
+
+          // Auto-select first ongoing or upcoming live session if live course
+          if (isLive && built.length > 0) {
+              const now = new Date();
+              const liveIdx = built.findIndex(l => {
+                  if (l.type !== 'live') return false;
+                  const start = l.start_time ? new Date(l.start_time) : null;
+                  const end = l.end_time ? new Date(l.end_time) : null;
+                  // If live OR starting soon OR in future
+                  return (start && end && now >= start && now <= end) || (start && now < start);
+              });
+              if (liveIdx !== -1) setCurrentIdx(liveIdx);
+          }
+
           // Register total so progress % computes correctly on My Learning page
-          registerLessonCount(id, built.length);
+          if (!isTrainer) registerLessonCount(id, built.length);
           const exp = {};
           (c.modules || []).forEach(m => { exp[m.module_id] = true; });
           setExpandedModules(exp);
@@ -298,7 +322,7 @@ const CoursePlayer = () => {
       } catch (e) { setError(e.message); }
       finally { setLoading(false); }
     })();
-  }, [id]);
+  }, [id, isTrainer]);
 
   // Reset just-completed animation when lesson changes
   useEffect(() => { setJustCompleted(false); }, [currentIdx]);
@@ -318,21 +342,13 @@ const CoursePlayer = () => {
 
   /* Mark current lesson complete */
   const handleMarkComplete = useCallback(() => {
-    if (!currentLesson) return;
+    if (isTrainer || !currentLesson) return;
     const sId = courseId;
     const lessonId = currentLesson.id;
     const isCurrentlyDone = isLessonComplete(sId, lessonId);
-    
-    console.log(`[PLAYER] handleMarkComplete toggle: courseId=${sId}, lessonId=${lessonId}, currentStatus=${isCurrentlyDone}`);
     markLessonComplete(sId, lessonId, totalLessons);
-    
-    // Only show "just completed" animation if we are MARKING as done
-    if (!isCurrentlyDone) {
-      setJustCompleted(true);
-    } else {
-      setJustCompleted(false);
-    }
-  }, [currentLesson, courseId, totalLessons, markLessonComplete, isLessonComplete]);
+    if (!isCurrentlyDone) setJustCompleted(true);
+  }, [currentLesson, courseId, totalLessons, markLessonComplete, isLessonComplete, isTrainer]);
 
   const go = idx => setCurrentIdx(Math.max(0, Math.min(lessons.length - 1, idx)));
   const toggleModule = mid => setExpandedModules(p => ({ ...p, [mid]: !p[mid] }));
@@ -367,8 +383,8 @@ const CoursePlayer = () => {
       <AlertCircle size={52} color="#ef4444" />
       <h2 style={{ color: 'white', fontSize: '1.4rem', fontWeight: 800 }}>Course Unavailable</h2>
       <p style={{ color: '#64748b' }}>This course could not be loaded.</p>
-      <button onClick={() => navigate('/student/courses')} style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', padding: '0.75rem 2rem', fontWeight: 700, cursor: 'pointer' }}>
-        ← My Learning
+      <button onClick={() => navigate(isTrainer ? '/trainer/courses' : '/student/courses')} style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', borderRadius: '10px', padding: '0.75rem 2rem', fontWeight: 700, cursor: 'pointer' }}>
+        ← {isTrainer ? 'Back to Courses' : 'My Learning'}
       </button>
     </div>
   );
@@ -381,12 +397,12 @@ const CoursePlayer = () => {
 
         {/* Back */}
         <button
-          onClick={() => navigate('/student/courses')}
+          onClick={() => navigate(isTrainer ? '/trainer/courses' : '/student/courses')}
           style={{ height: '100%', padding: '0 1.25rem', background: 'none', border: 'none', borderRight: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 600, transition: 'all 0.15s', whiteSpace: 'nowrap', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
           onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'none'; }}
         >
-          <ArrowLeft size={15} /> My Learning
+          <ArrowLeft size={15} /> {isTrainer ? 'Exit Preview' : 'My Learning'}
         </button>
 
         {/* Sidebar toggle */}
@@ -412,18 +428,20 @@ const CoursePlayer = () => {
           </div>
         </div>
 
-        {/* Progress pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 1.5rem', flexShrink: 0 }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 600 }}>PROGRESS</div>
-            <div style={{ fontSize: '0.78rem', color: progressPct === 100 ? '#10b981' : '#a5b4fc', fontWeight: 800 }}>
-              {completedCount}/{totalLessons} · {progressPct}%
+        {/* Progress pill - HIDDEN for trainers */}
+        {!isTrainer && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 1.5rem', flexShrink: 0 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 600 }}>PROGRESS</div>
+              <div style={{ fontSize: '0.78rem', color: progressPct === 100 ? '#10b981' : '#a5b4fc', fontWeight: 800 }}>
+                {completedCount}/{totalLessons} · {progressPct}%
+              </div>
+            </div>
+            <div style={{ width: '80px', height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', background: progressPct === 100 ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#6366f1,#8b5cf6)', width: `${progressPct}%`, borderRadius: '99px', transition: 'width 0.5s ease' }} />
             </div>
           </div>
-          <div style={{ width: '80px', height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: progressPct === 100 ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#6366f1,#8b5cf6)', width: `${progressPct}%`, borderRadius: '99px', transition: 'width 0.5s ease' }} />
-          </div>
-        </div>
+        )}
 
         {/* Prev / Next */}
         <div style={{ display: 'flex', alignItems: 'center', height: '100%', borderLeft: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
@@ -555,8 +573,8 @@ const CoursePlayer = () => {
                       <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25, margin: 0 }}>{currentLesson.title}</h1>
                     </div>
 
-                    {/* Mark as complete button — shown for video & live */}
-                    {currentLesson.type !== 'assessment' && (
+                    {/* Mark as complete button — shown for video & live (ONLY FOR STUDENTS) */}
+                    {currentLesson.type !== 'assessment' && !isTrainer && (
                       <MarkCompleteButton isDone={currentDone} onMark={handleMarkComplete} />
                     )}
                   </div>
@@ -581,7 +599,7 @@ const CoursePlayer = () => {
                   {/* ── Bottom nav + advance ── */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', borderRadius: '14px', padding: '1rem 1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <button onClick={() => go(currentIdx - 1)} disabled={currentIdx === 0}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '9px', cursor: currentIdx === 0 ? 'not-allowed' : 'pointer', color: currentIdx === 0 ? '#cbd5e1' : '#475569', fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.15s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '99px', cursor: currentIdx === 0 ? 'not-allowed' : 'pointer', color: currentIdx === 0 ? '#cbd5e1' : '#475569', fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.15s' }}
                       onMouseEnter={e => { if (currentIdx > 0) { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; } }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = currentIdx === 0 ? '#cbd5e1' : '#475569'; }}>
                       <ChevronLeft size={16} /> Previous
@@ -603,8 +621,8 @@ const CoursePlayer = () => {
                         Next Lesson <ChevronRight size={17} />
                       </button>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', borderRadius: '9px', fontWeight: 700, fontSize: '0.875rem', background: progressPct === 100 ? 'linear-gradient(135deg,#10b981,#059669)' : '#f1f5f9', color: progressPct === 100 ? 'white' : '#94a3b8' }}>
-                        {progressPct === 100 ? <><CheckCircle size={16} /> Course Complete! 🎉</> : 'Last Lesson'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', borderRadius: '99px', fontWeight: 700, fontSize: '0.875rem', background: (!isTrainer && progressPct === 100) ? 'linear-gradient(135deg,#10b981,#059669)' : '#f1f5f9', color: (!isTrainer && progressPct === 100) ? 'white' : '#94a3b8' }}>
+                        {(!isTrainer && progressPct === 100) ? <><CheckCircle size={16} /> Course Complete! 🎉</> : 'Last Lesson'}
                       </div>
                     )}
                   </div>

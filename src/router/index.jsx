@@ -94,11 +94,11 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <TrainerDashboard /> },
           { path: 'courses', element: <TrainerCourses /> },
-          { path: 'live', element: <TrainerLiveSessions /> },
           { path: 'students', element: <TrainerStudents /> },
-          { path: 'course/:courseId', element: <TrainerCurriculum /> }
         ]
-      }
+      },
+      // Full-screen trainer preview
+      { path: 'course/:id', element: <TrainerCurriculum /> }
     ]
   },
   {

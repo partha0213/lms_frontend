@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/AuthContext';
-import { Book, Loader2, Search, Filter, MoreVertical, LayoutGrid, List as ListIcon, ShieldCheck, BookOpen } from 'lucide-react';
+import { Book, Loader2, Search, Filter, MoreVertical, LayoutGrid, List as ListIcon, ShieldCheck, BookOpen, PlayCircle, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { ADMIN_API, TRAINER_API } from '../../config';
@@ -132,9 +132,11 @@ const TrainerCourses = () => {
               position: 'relative', zIndex: 1
             }}>
               {filteredCourses.map((course) => (
-                <div 
+                <motion.div 
                   key={course.course_id} 
                   className="course-glow-card" 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   style={{ 
                     padding: viewMode === 'grid' ? '1.75rem' : '1.25rem 1.75rem', 
                     display: 'flex', 
@@ -170,33 +172,53 @@ const TrainerCourses = () => {
                       <p style={{ margin: '0 0 0.85rem 0', color: 'var(--color-text-muted)', fontSize: '0.8rem', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: viewMode === 'grid' ? 2 : 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {course.course_description}
                       </p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.6rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        <span style={{ color: '#10b981' }}>● Assigned</span>
-                        <span style={{ color: 'var(--color-text-muted)' }}>• {course.course_type || 'RECORDED'}</span>
-                        <span style={{ color: 'var(--color-text-muted)' }}>• ID: {course.course_id.slice(0, 8)}</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.65rem', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.5rem' }}>
+                        <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} /> Assigned
+                        </span>
+                        
+                        {(() => {
+                           const t = (course.course_type || course.type || course.course_Type || 'recorded').toLowerCase();
+                           const isLive = t === 'live' || t === 'live_course';
+                           return (
+                             <span style={{ 
+                               backgroundColor: isLive ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-surface-muted)',
+                               color: isLive ? '#ef4444' : 'var(--color-text-muted)',
+                               padding: '0.2rem 0.75rem',
+                               borderRadius: '2rem',
+                               border: `1px solid ${isLive ? 'rgba(239, 68, 68, 0.2)' : 'var(--color-border)'}`
+                             }}>
+                               • {isLive ? '🔴 LIVE STREAM' : '🎬 RECORDED'}
+                             </span>
+                           );
+                        })()}
+                        
+                        <span style={{ color: 'var(--color-text-muted)', padding: '0.2rem 0' }}>• ID: {String(course.course_id || course.id).slice(0, 8)}</span>
                       </div>
                     </div>
                   </div>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '0.75rem', 
-                    alignItems: 'center', 
-                    marginLeft: viewMode === 'list' ? '1.5rem' : '0',
-                    width: viewMode === 'grid' ? '100%' : 'auto',
-                    justifyContent: viewMode === 'grid' ? 'flex-end' : 'unset'
-                  }}>
-                    <button 
-                      onClick={() => navigate(`/trainer/course/${course.course_id}`)}
-                      className="btn btn-primary" 
-                      style={{ padding: '0.65rem 1.75rem', borderRadius: '1rem', fontWeight: 950, fontSize: '0.85rem' }}
-                    >
-                      Studio Architect
-                    </button>
+                  <div style={{ display: 'flex', gap: '1rem', width: viewMode === 'grid' ? '100%' : 'auto', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                      <button 
+                        onClick={() => navigate(`/trainer/course/${course.course_id}`)}
+                        className="btn btn-secondary" 
+                        style={{ flex: 1, padding: '0.65rem 1rem', borderRadius: '1rem', fontWeight: 950, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                      >
+                        <PlayCircle size={15} /> View
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/manage/course/${course.course_id}`)}
+                        className="btn btn-primary" 
+                        style={{ flex: 1, padding: '0.65rem 1rem', borderRadius: '1rem', fontWeight: 950, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                      >
+                        <Layers size={15} /> Studio
+                      </button>
+                    </div>
                     <button style={{ color: 'var(--color-text-muted)', padding: '0.65rem', border: 'none', background: 'var(--color-surface-muted)', borderRadius: '1rem', cursor: 'pointer' }}>
                       <MoreVertical size={16} />
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
