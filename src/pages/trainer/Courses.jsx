@@ -4,7 +4,7 @@ import { useAuth } from '../../shared/AuthContext';
 import { Book, Loader2, Search, Filter, MoreVertical, LayoutGrid, List as ListIcon, ShieldCheck, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { ADMIN_API } from '../../config';
+import { ADMIN_API, TRAINER_API } from '../../config';
 
 const TrainerCourses = () => {
   const { user, accessToken } = useAuth();
@@ -24,7 +24,7 @@ const TrainerCourses = () => {
       };
 
       try {
-        const response = await fetch(`${ADMIN_API}/trainer_course_ids`, { headers });
+        const response = await fetch(`${TRAINER_API}/trainer_course_ids`, { headers });
         if (response.ok) {
           const data = await response.json();
           const ids = data.course_ids || [];
@@ -186,7 +186,7 @@ const TrainerCourses = () => {
                     justifyContent: viewMode === 'grid' ? 'flex-end' : 'unset'
                   }}>
                     <button 
-                      onClick={() => navigate(`/manage/course/${course.course_id}`)}
+                      onClick={() => navigate(`/trainer/course/${course.course_id}`)}
                       className="btn btn-primary" 
                       style={{ padding: '0.65rem 1.75rem', borderRadius: '1rem', fontWeight: 950, fontSize: '0.85rem' }}
                     >

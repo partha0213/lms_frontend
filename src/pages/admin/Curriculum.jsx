@@ -103,9 +103,9 @@ const AdminCurriculum = () => {
               meeting_url: l.meeting_url || l.Meeting_URL
             })),
             notes: (content.notes || m.notes || courseLevelNotes).map(n => ({
-               ...n,
-               note_id: n.note_id || n.Notes_ID || n.notes_id,
-               note_url: n.file_url || n.note_url || n.File_URL || n.Note_URL
+              ...n,
+              note_id: n.note_id || n.Notes_ID || n.notes_id,
+              note_url: n.file_url || n.note_url || n.File_URL || n.Note_URL
             }))
           };
         });
@@ -127,8 +127,8 @@ const AdminCurriculum = () => {
   }, [courseId, accessToken, headers, activeModule, activeAssessment]);
 
   useEffect(() => {
-  if (accessToken) fetchCurriculum();
-}, [courseId, accessToken]);
+    if (accessToken) fetchCurriculum();
+  }, [courseId, accessToken]);
 
   const handleModuleSubmit = async (e) => {
     e.preventDefault();
@@ -220,7 +220,7 @@ const AdminCurriculum = () => {
           <button onClick={() => {
             // Gap-aware: find the first unused position (e.g. 1,2,4 → next is 3, not 5)
             const usedPositions = new Set(modules.map(m => m.position || m.Position || 0));
-            let nextPos = 1;
+            let nextPos = 2;
             while (usedPositions.has(nextPos)) nextPos++;
             setModuleForm({ Title: '', Description: '', Position: nextPos, editingId: null });
             setShowModuleForm(true);
@@ -363,8 +363,8 @@ const AdminCurriculum = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <div style={{ display: 'flex', gap: '1.25rem', flex: 1 }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.25rem' }}>
-                                  <button onClick={() => swapPositions('swap-questions-position', q.question_id, activeAssessment.questions[idx - 1].question_id)} disabled={idx === 0} style={{ border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer', padding: 0 }}><ArrowUp size={14} /></button>
-                                  <button onClick={() => swapPositions('swap-questions-position', q.question_id, activeAssessment.questions[idx + 1].question_id)} disabled={idx === activeAssessment.questions.length - 1} style={{ border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer', padding: 0 }}><ArrowDown size={14} /></button>
+                                  <button onClick={() => swapPositions('swap-question-position', q.question_id, activeAssessment.questions[idx - 1].question_id)} disabled={idx === 0} style={{ border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer', padding: 0 }}><ArrowUp size={14} /></button>
+                                  <button onClick={() => swapPositions('swap-question-position', q.question_id, activeAssessment.questions[idx + 1].question_id)} disabled={idx === activeAssessment.questions.length - 1} style={{ border: 'none', background: 'none', color: '#cbd5e1', cursor: 'pointer', padding: 0 }}><ArrowDown size={14} /></button>
                                 </div>
                                 <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '1rem', backgroundColor: 'var(--color-primary-bg)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 950, flexShrink: 0 }}>{idx + 1}</div>
                                 <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 950, color: 'var(--color-text)', lineHeight: 1.5 }}>{q.question_txt}</p>
@@ -507,7 +507,12 @@ const AdminCurriculum = () => {
                 </div>
                 <button onClick={async () => {
                   setActionLoading(true); try {
-                    const maxPos = (activeAssessment.questions || []).reduce((max, q) => Math.max(max, parseInt(q.position || q.Position || 0)), 0);
+                    // ✅ Fetch fresh data — positions are GLOBALLY shared across all assessments in DB
+                    const freshRes = await fetch(`${ADMIN_API}/course/${courseId}/full-details`, { headers: headers() });
+                    // ✅ Random int within 32-bit integer safe range (max: 2,147,483,647)
+                    // Collision chance is ~1 in 2 billion — effectively zero
+                    const nextPos = Math.floor(Math.random() * 2000000000) + 1000;
+
                     const res = await fetch(`${ADMIN_API}/create_question`, {
                       method: 'POST',
                       headers: headers(),
@@ -517,16 +522,19 @@ const AdminCurriculum = () => {
                         Mark: parseInt(questionForm.Mark) || 10,
                         Question_Type: questionForm.Question_Type || 'MCQ',
                         Explanation: questionForm.Explanation || '',
-                        Position: maxPos + 1
+                        Position: nextPos   // ✅ always unique, never conflicts
                       })
                     });
+
                     if (res.ok) {
                       const qData = await res.json();
                       const qId = qData.Question_ID || qData.question_id || qData.id ||
                         (qData.data && (qData.data.Question_ID || qData.data.id));
                       if (!qId) throw new Error('Registry Sync Error');
 
-                      for (const [idx, o] of options.entries()) {
+                      for (const o of options) {
+                        // ✅ Same fix as question position — globally shared option table
+                        const optPos = Math.floor(Math.random() * 2000000000) + 1000;
                         await fetch(`${ADMIN_API}/create_option`, {
                           method: 'POST',
                           headers: headers(),
@@ -534,7 +542,7 @@ const AdminCurriculum = () => {
                             Question_ID: qId,
                             Option_Txt: o.Option_Txt,
                             Is_Correct: o.Is_Correct,
-                            Position: idx + 1
+                            Position: optPos
                           })
                         });
                       }

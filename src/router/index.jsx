@@ -25,6 +25,7 @@ import TrainerDashboard from '../pages/trainer/Dashboard';
 import TrainerCourses from '../pages/trainer/Courses';
 import TrainerLiveSessions from '../pages/trainer/LiveSessions';
 import TrainerStudents from '../pages/trainer/Students';
+import TrainerCurriculum from '../pages/trainer/Curriculum';
 
 // Admin
 import AdminDashboard from '../pages/admin/Dashboard';
@@ -94,7 +95,8 @@ export const router = createBrowserRouter([
           { index: true, element: <TrainerDashboard /> },
           { path: 'courses', element: <TrainerCourses /> },
           { path: 'live', element: <TrainerLiveSessions /> },
-          { path: 'students', element: <TrainerStudents /> }
+          { path: 'students', element: <TrainerStudents /> },
+          { path: 'course/:courseId', element: <TrainerCurriculum /> }
         ]
       }
     ]
