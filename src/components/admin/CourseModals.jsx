@@ -624,8 +624,20 @@ export const ManageModuleModal = ({ course, onClose, showToast, refresh }) => {
       const res = await fetch(`${ADMIN_API}/course/${course.course_id}/full-details`, { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } });
       if (res.ok) {
          const data = await res.json();
-         setModules(data.course.modules || []);
-         return data.course.modules;
+         // ✅ Map content.videos → video so the list renders correctly
+         const mapped = (data.course.modules || []).map(m => ({
+            ...m,
+            video: (m.content?.videos || m.video || []).map(v => ({
+               ...v,
+               video_id: v.video_id || v.Video_ID,
+               video_url: v.video_url || v.Video_URL,
+               course_description: v.description || v.course_description
+            })),
+            live_sessions: m.content?.live_sessions || m.live_sessions || [],
+            assessments: m.content?.assessments || m.assessments || []
+         }));
+         setModules(mapped);
+         return mapped;
       }
       return null;
    };

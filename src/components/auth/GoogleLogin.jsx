@@ -2,78 +2,67 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { useTheme } from '../../shared/ThemeContext';
 import { API_BASE } from '../../config';
 
+// ✅ Module-level flag — survives StrictMode's fake unmount/remount cycle
+// Unlike useRef, this is NOT reset when the component unmounts in dev mode
+let gsiInitialized = false;
+
 const GoogleLogin = ({ onLoginSuccess, onLoginError }) => {
   const { isDark } = useTheme();
   const googleButtonRef = useRef(null);
-  const initializedRef = useRef(false);
 
   const handleCredentialResponse = useCallback(async (response) => {
     try {
       const res = await fetch(`${API_BASE}/auth_checkpoint/google-signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          id_token: response.credential
-        })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: response.credential })
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        if (onLoginSuccess) {
-          onLoginSuccess(data);
-        }
+        onLoginSuccess?.(data);
       } else {
-        if (onLoginError) {
-          onLoginError(data.message || 'Google Sign-In failed');
-        }
+        onLoginError?.(data.message || 'Google Sign-In failed');
       }
     } catch (err) {
       console.error(err);
-      if (onLoginError) {
-        onLoginError('Failed to connect to the server');
-      }
+      onLoginError?.('Failed to connect to the server');
     }
   }, [onLoginSuccess, onLoginError]);
 
   useEffect(() => {
-    // Guard against StrictMode double-mount re-initialization
-    if (initializedRef.current) return;
+    // ✅ Use module-level flag — not reset by StrictMode fake unmount
+    if (gsiInitialized) return;
+    if (!window.google || !googleButtonRef.current) return;
 
-    /* global google */
-    if (window.google && googleButtonRef.current) {
-      initializedRef.current = true;
+    gsiInitialized = true;
 
-      window.google.accounts.id.initialize({
-        client_id: "50391096209-bejc51ouekqft0ban0f8s76f8345v0ks.apps.googleusercontent.com",
-        callback: handleCredentialResponse,
-      });
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,  // ✅ Move to .env
+      callback: handleCredentialResponse,
+      cancel_on_tap_outside: true,                        // ✅ Stop retry on outside click
+    });
 
-      window.google.accounts.id.renderButton(
-        googleButtonRef.current,
-        {
-          type: "standard",
-          size: "large",
-          theme: isDark ? "filled_black" : "outline",
-          text: "continue_with",
-          shape: "rectangular",
-          // ...
-          width: 380 // Must be a pixel NUMBER, not a CSS string like "100%"
-        }
-      );
-    }
+    window.google.accounts.id.renderButton(googleButtonRef.current, {
+      type: 'standard',
+      size: 'large',
+      theme: isDark ? 'filled_black' : 'outline',
+      text: 'continue_with',
+      shape: 'rectangular',
+      width: 380,
+    });
 
     return () => {
-      // Allow re-initialization if component fully unmounts and remounts
-      initializedRef.current = false;
+      // ✅ Cancel GSI retry loop on true unmount (navigation away)
+      // Do NOT reset gsiInitialized here — let it stay true across StrictMode cycles
+      window.google?.accounts.id.cancel();
     };
-  }, [handleCredentialResponse]);
+  }, [handleCredentialResponse, isDark]); // ✅ isDark added so theme changes re-render button
 
   return (
     <div className="w-full flex justify-center">
-      <div ref={googleButtonRef} className="flex justify-center"></div>
+      <div ref={googleButtonRef} className="flex justify-center" />
     </div>
   );
 };

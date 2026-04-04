@@ -65,6 +65,7 @@ const AdminCurriculum = () => {
         };
         setCourse(mappedCourse);
 
+        const courseLevelNotes = (rawCourse.notes || []);
         const sortedModules = (rawCourse.modules || []).sort((a, b) => (a.position || a.Position || 0) - (b.position || b.Position || 0)).map(m => {
           const content = m.content || {};
           return {
@@ -101,10 +102,10 @@ const AdminCurriculum = () => {
               live_id: l.live_id || l.Live_ID,
               meeting_url: l.meeting_url || l.Meeting_URL
             })),
-            notes: (content.notes || m.notes || []).map(n => ({
-              ...n,
-              note_id: n.note_id || n.Notes_ID || n.notes_id,
-              note_url: n.file_url || n.note_url || n.File_URL || n.Note_URL
+            notes: (content.notes || m.notes || courseLevelNotes).map(n => ({
+               ...n,
+               note_id: n.note_id || n.Notes_ID || n.notes_id,
+               note_url: n.file_url || n.note_url || n.File_URL || n.Note_URL
             }))
           };
         });
@@ -121,11 +122,13 @@ const AdminCurriculum = () => {
           }
         }
       }
-    } catch (err) { showToast('Data synchronization failed', 'error'); }
+    } catch (err) { console.error('fetchCurriculum failed:', err); showToast('Data synchronization failed', 'error'); }
     finally { setLoading(false); }
   }, [courseId, accessToken, headers, activeModule, activeAssessment]);
 
-  useEffect(() => { fetchCurriculum(); }, [courseId]);
+  useEffect(() => {
+  if (accessToken) fetchCurriculum();
+}, [courseId, accessToken]);
 
   const handleModuleSubmit = async (e) => {
     e.preventDefault();
