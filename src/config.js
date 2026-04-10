@@ -1,5 +1,5 @@
 // Centralized API Configuration for Gyanteerth LMS
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://44.208.200.126:8000/gyantreeth/v1';
+export const API_BASE = import.meta.env.VITE_API_BASE || 'http://44.208.200.126/gyantreeth/v1';
 
 // Detailed Service Endpoints
 export const ADMIN_API = `${API_BASE}/admin`;
